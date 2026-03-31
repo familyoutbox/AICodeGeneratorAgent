@@ -9,8 +9,7 @@ readme = "README.md"
 python = "^3.12"
 fastapi = {extras = ["standard"], version = "^0.135.2"}
 psycopg = {extras = ["binary"], version = "^3.3.3"}
-openai = "^2.30.0"
-python-dotenv = "^1.2.2"
+ollama = "^0.6.1"
 
 
 [build-system]

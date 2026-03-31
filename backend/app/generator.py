@@ -1,12 +1,13 @@
 import json
 import os
+import re
 
-from dotenv import load_dotenv
-from openai import AsyncOpenAI
+from ollama import AsyncClient
 
-load_dotenv()
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "codellama")
 
-client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = AsyncClient(host=OLLAMA_HOST)
 
 SYSTEM_PROMPT = """You are an expert code generator. You generate production-ready, well-structured code for any tech stack.
 
@@ -42,27 +43,52 @@ def _build_user_prompt(prompt: str, stack: str, framework: str | None) -> str:
     return "\n".join(parts)
 
 
+def _extract_json(text: str) -> dict:
+    """Extract JSON from LLM response, handling markdown fences and extra text."""
+    text = text.strip()
+
+    fence_match = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
+    if fence_match:
+        text = fence_match.group(1).strip()
+
+    brace_start = text.find("{")
+    if brace_start == -1:
+        raise ValueError("No JSON object found in response")
+
+    depth = 0
+    for i in range(brace_start, len(text)):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return json.loads(text[brace_start : i + 1])
+
+    return json.loads(text[brace_start:])
+
+
 async def generate_code(
     prompt: str, stack: str, framework: str | None = None
 ) -> dict:
     user_prompt = _build_user_prompt(prompt, stack, framework)
 
-    response = await client.chat.completions.create(
-        model="gpt-4o",
+    response = await client.chat(
+        model=OLLAMA_MODEL,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
-        temperature=0.3,
-        max_tokens=16000,
-        response_format={"type": "json_object"},
+        options={
+            "temperature": 0.3,
+            "num_predict": 16000,
+        },
     )
 
-    raw = response.choices[0].message.content
-    if raw is None:
+    raw = response.message.content
+    if not raw:
         raise ValueError("Empty response from AI model")
 
-    parsed = json.loads(raw)
+    parsed = _extract_json(raw)
 
     files = parsed.get("files", [])
     summary = parsed.get("summary", "Code generated successfully.")
