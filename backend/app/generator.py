@@ -49,7 +49,14 @@ def _extract_json(text: str) -> dict:
 
     fence_match = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
     if fence_match:
-        text = fence_match.group(1).strip()
+        candidate = fence_match.group(1).strip()
+        # Only use fence-extracted text if it contains a parseable JSON object
+        if "{" in candidate:
+            try:
+                json.JSONDecoder().raw_decode(candidate, candidate.find("{"))
+                text = candidate
+            except json.JSONDecodeError:
+                pass  # Fall through to parse the original text
 
     brace_start = text.find("{")
     if brace_start == -1:
