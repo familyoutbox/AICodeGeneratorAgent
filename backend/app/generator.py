@@ -55,16 +55,12 @@ def _extract_json(text: str) -> dict:
     if brace_start == -1:
         raise ValueError("No JSON object found in response")
 
-    depth = 0
-    for i in range(brace_start, len(text)):
-        if text[i] == "{":
-            depth += 1
-        elif text[i] == "}":
-            depth -= 1
-            if depth == 0:
-                return json.loads(text[brace_start : i + 1])
-
-    return json.loads(text[brace_start:])
+    decoder = json.JSONDecoder()
+    try:
+        result, _ = decoder.raw_decode(text, brace_start)
+        return result
+    except json.JSONDecodeError:
+        return json.loads(text[brace_start:])
 
 
 async def generate_code(
