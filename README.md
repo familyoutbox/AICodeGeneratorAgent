@@ -26,9 +26,9 @@ A fullstack web application that generates production-ready code for **any tech 
 
 ## Tech Stack (This App)
 
-- **Backend**: FastAPI (Python) with OpenAI API
+- **Backend**: FastAPI (Python) with Ollama (local LLM)
 - **Frontend**: React + TypeScript + Tailwind CSS + shadcn/ui
-- **AI**: GPT-4o for code generation
+- **AI**: CodeLlama via Ollama — runs locally, no API key needed
 
 ## Getting Started
 
@@ -36,15 +36,23 @@ A fullstack web application that generates production-ready code for **any tech 
 
 - Python 3.12+
 - Node.js 18+
-- OpenAI API key
+- [Ollama](https://ollama.com/) installed and running
 
 ### Backend Setup
 
 ```bash
+# Install and start Ollama, then pull the model
+ollama pull codellama
+
 cd backend
-echo "OPENAI_API_KEY=your-key-here" > .env
 poetry install
 poetry run fastapi dev app/main.py
+```
+
+You can configure the Ollama host and model via environment variables:
+```bash
+export OLLAMA_HOST=http://localhost:11434  # default
+export OLLAMA_MODEL=codellama              # default
 ```
 
 The backend runs at http://localhost:8000
