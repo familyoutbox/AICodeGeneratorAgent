@@ -81,6 +81,7 @@ async def generate_code(
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},
         ],
+        format="json",
         options={
             "temperature": 0.3,
             "num_predict": 16000,
